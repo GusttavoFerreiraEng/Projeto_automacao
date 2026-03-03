@@ -12,5 +12,5 @@ class TarefaResponse(BaseModel):
     status: str
     criado_em: datetime
 
-    # ATUALIZAÇÃO PYDANTIC V2: Permite ler os dados do SQLAlchemy
+    # Permite ler os dados do SQLAlchemy
     model_config = ConfigDict(from_attributes=True)

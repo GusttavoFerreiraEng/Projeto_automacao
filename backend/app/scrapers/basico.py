@@ -7,7 +7,6 @@ def raspar_titulo(url: str, tarefa_id: int) -> str:
     Função isolada que apenas entra no site e devolve o título.
     Não sabe nada sobre Banco de Dados ou Celery.
     """
-    # A trava do Windows que aprendemos a fazer
     if sys.platform == 'win32':
         asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 

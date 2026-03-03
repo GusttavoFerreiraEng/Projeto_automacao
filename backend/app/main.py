@@ -23,7 +23,7 @@ def home():
     return {
         "status": "OK", 
         "mensagem": "Motor de automacao rodando",
-        "banco_de_dados": "Aguardando conexoes..."
+        "banco_de_dados": "OK"
     }
 
 @app.post("/tarefas/", response_model=schemas.TarefaResponse)

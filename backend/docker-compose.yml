@@ -6,9 +6,9 @@ services:
     container_name: automacao_postgres
     restart: always
     environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: adminpassword
-      POSTGRES_DB: automacao_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=automacao_db
     ports:
       - "5433:5432"
     volumes:

@@ -13,7 +13,6 @@ def raspar_primeiro_produto(url: str, tarefa_id: int) -> str:
         print(f"[{tarefa_id}] Acessando Mercado Livre...")
         page.goto(url)
         
-        # 1. A SUA DESCOBERTA:
         # O robô espera até a classe exata que você encontrou aparecer na tela
         page.wait_for_selector('.poly-component__title', timeout=15000)
         

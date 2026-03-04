@@ -1,9 +1,11 @@
+from typing import Optional
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 
 # 1. Esquema para CRIAR uma tarefa (o que o usuário envia na API)
 class TarefaCreate(BaseModel):
     site_alvo: str
+    preco_custo: Optional[float] = 0.0
 
 # 2. Esquema para LER uma tarefa (o que a API devolve para o usuário)
 class TarefaResponse(BaseModel):

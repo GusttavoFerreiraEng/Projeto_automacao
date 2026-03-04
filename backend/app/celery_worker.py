@@ -1,4 +1,5 @@
 import traceback
+import re
 from celery import Celery
 from .database import SessionLocal
 from . import models
@@ -10,8 +11,25 @@ celery_app = Celery(
     backend="redis://127.0.0.1:6379/0"
 )
 
-# 1. "bind=True" dá à função acesso a si mesma (self).
-# "max_retries=3" define o limite máximo de teimosia do robô.
+def limpar_preco(preco_str):
+     if not preco_str or preco_str == "0" or preco_str == "R$ 0":
+        return 0.0
+
+     # Remove R$, pontos de milhar e espaços, mantém a vírgula/ponto decimal
+     apenas_numeros = re.sub(r'[^\d,.]', '', preco_str)
+     
+     # Se o formato brasileiro vier com ponto no milhar (ex: 4.718), remove o ponto
+     # Se vier com vírgula decimal, trocamos por ponto
+     if ',' in apenas_numeros and '.' in apenas_numeros:
+         apenas_numeros = apenas_numeros.replace('.', '').replace(',', '.')
+     elif ',' in apenas_numeros:
+         apenas_numeros = apenas_numeros.replace(',', '.')
+         
+     try:
+       return float(apenas_numeros)
+     except:
+        return 0.0
+
 @celery_app.task(bind=True, max_retries=3)
 def tarefa_raspar_site(self, tarefa_id: int):
     db = SessionLocal()
@@ -23,36 +41,52 @@ def tarefa_raspar_site(self, tarefa_id: int):
 
         tarefa.status = f"rodando (tentativa {self.request.retries + 1})"
         db.commit()
-        print(f"[{tarefa_id}] Iniciando automação no site: {tarefa.site_alvo}")
 
-        resultado_site = raspar_primeiro_produto(url=tarefa.site_alvo, tarefa_id=tarefa_id)
+        # O robô agora recebe um dicionário {'titulo': ..., 'preco': ...}
+        dados_da_web = raspar_primeiro_produto(url=tarefa.site_alvo, tarefa_id=tarefa_id)
 
-        tarefa.status = f"concluida ({resultado_site[:40]}...)"
+        # --- A MUDANÇA ESTÁ AQUI ---
+        
+        # 1. Pegamos o custo que a API salvou (Ex: "R$ 3.500,00") e limpamos para número
+        custo_real = limpar_preco(tarefa.preco_custo)
+        
+        # 2. Limpamos o preço de venda que veio da raspagem
+        preco_venda_num = limpar_preco(dados_da_web.get("preco"))
+        
+        # 3. Fazemos a conta com valores REAIS
+        lucro_real = preco_venda_num - custo_real
+        
+        # Cálculo da margem (evitando divisão por zero)
+        margem_percentual = (lucro_real / preco_venda_num) * 100 if preco_venda_num > 0 else 0
+
+        # 4. Atualizamos o banco
+        tarefa.preco_venda = f"R$ {preco_venda_num:,.2f}"
+        # O preco_custo já foi salvo pela rota do FastAPI, então não precisamos mexer, 
+        # mas se quiser garantir a formatação:
+        tarefa.preco_custo = f"R$ {custo_real:,.2f}"
+        
+        tarefa.margem_lucro = f"{margem_percentual:.2f}% (R$ {lucro_real:,.2f})"
+        tarefa.analise_produtos = dados_da_web.get("titulo")
+        
+        if "erro" in dados_da_web.get("status"):
+            tarefa.status = "erro na raspagem"
+        else:
+            tarefa.status = "concluida"
+
         db.commit()
-        return f"Finalizado com sucesso: {resultado_site}"
+        return f"Sucesso: {dados_da_web.get('titulo')} | Lucro: R$ {lucro_real:.2f}"
 
     except Exception as e:
-        # --- LÓGICA DE RETENTATIVA ---
         tentativa_atual = self.request.retries + 1
-        
         if tentativa_atual <= self.max_retries:
-            # Se ainda tem tentativas, avisa no banco e tenta de novo em 10 segundos
             if 'tarefa' in locals() and tarefa:
                 tarefa.status = f"falhou. aguardando tentativa {tentativa_atual + 1}..."
                 db.commit()
-            
-            print(f"[{tarefa_id}] Site falhou. Tentando de novo em 10 segundos... ({tentativa_atual}/{self.max_retries})")
-            
-            # O 'countdown' é o tempo de espera (em segundos) antes de tentar de novo
             raise self.retry(exc=e, countdown=10)
         else:
-            # Se já tentou 3 vezes e falhou em todas, joga a toalha
             if 'tarefa' in locals() and tarefa:
                 tarefa.status = "erro fatal: site fora do ar"
                 db.commit()
-            
-            print(f"[{tarefa_id}] Desistindo após {self.max_retries} tentativas.")
-            traceback.print_exc()
             return "Erro Fatal"
     
     finally:

@@ -7,7 +7,7 @@ from .celery_worker import tarefa_raspar_site
 # Cria as tabelas no banco se elas não existirem
 models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="API de Automação")
+app = FastAPI(title="API Automação")
 
 # --- 1. A PONTE COM O BANCO DE DADOS ---
 def get_db():
@@ -22,21 +22,24 @@ def get_db():
 def home():
     return {
         "status": "OK", 
-        "mensagem": "Motor de automacao rodando",
+        "mensagem": "OK",
         "banco_de_dados": "OK"
     }
 
 @app.post("/tarefas/", response_model=schemas.TarefaResponse)
 def criar_tarefa(tarefa: schemas.TarefaCreate, db: Session = Depends(get_db)):
-    # 1. Prepara a informação para o banco
-    nova_tarefa = models.TarefaAutomacao(site_alvo=tarefa.site_alvo)
+    # 1. Prepara a informação para o banco (Agora com o Preço de Custo vindo do JSON)
+    nova_tarefa = models.TarefaAutomacao(
+        site_alvo=tarefa.site_alvo,
+        preco_custo=f"R$ {tarefa.preco_custo:,.2f}" # Salvamos formatado como texto
+    )
     
     # 2. Salva no PostgreSQL
     db.add(nova_tarefa)
     db.commit()
     db.refresh(nova_tarefa)
     
-    # 3.Passando o ID da tarefa
+    # 3. Passando o ID da tarefa para o Worker
     tarefa_raspar_site.delay(nova_tarefa.id)
     
     return nova_tarefa

@@ -9,3 +9,8 @@ class TarefaAutomacao(Base):
     site_alvo = Column(String, index=True, nullable=False)
     status = Column(String, default="pendente")
     criado_em = Column(DateTime, default=datetime.utcnow)
+
+    preco_venda = Column(String, nullable=True)
+    preco_custo = Column(String, nullable=True)
+    margem_lucro = Column(String, nullable=True)
+    analise_produtos = Column(String, nullable=True)

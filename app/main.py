@@ -4,6 +4,15 @@ from . import models, schemas
 from .database import engine, SessionLocal
 from .celery_worker import tarefa_raspar_site
 from fastapi import HTTPException
+import logging
+
+# Configuração básica de log
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    handlers=[logging.StreamHandler()]
+)
+logger = logging.getLogger("DinoLogger")
 
 # Cria as tabelas no banco se elas não existirem
 models.Base.metadata.create_all(bind=engine)
@@ -26,6 +35,12 @@ def home():
         "mensagem": "OK",
         "banco_de_dados": "OK"
     }
+
+
+@app.get("/health")
+def health_check():
+    return {"status": "healthy", "service": "dino-api"}
+
 
 # ROTA PARA CRIAR TAREFAS 
 @app.post("/tarefas/", response_model=schemas.TarefaResponse)

@@ -1,5 +1,6 @@
 import os
 import re
+import logging
 from celery import Celery
 from dotenv import load_dotenv
 from .database import SessionLocal
@@ -7,6 +8,14 @@ from . import models
 from .scrapers.mercadolivre import raspar_primeiro_produto
 
 load_dotenv()
+
+# Configuração básica de log
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    handlers=[logging.StreamHandler()]
+)
+logger = logging.getLogger("DinoLogger")
 
 # Configuração do Redis
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")

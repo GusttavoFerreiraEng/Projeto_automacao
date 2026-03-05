@@ -1,27 +1,35 @@
-name: Dino CI/CD
+name: Dino CI
 
-# 1. QUANDO o robô acorda?
 on:
   push:
-    branches: [ "main" ] # Sempre que você subir algo na main
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
 
-# 2. O QUE o robô faz?
 jobs:
-  testar-dino:
-    runs-on: ubuntu-latest # Ele liga um computador Linux na nuvem
-
+  build:
+    runs-on: ubuntu-latest
     steps:
-      - name: Pegando o código do Gustavo
-        uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
-      - name: Instalando o Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
 
-      - name: Instalando as dependências
-        run: |
-          pip install -r requirements.txt
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
 
-      - name: Verificando se o código está quebrado
-        run: python -m py_compile app/main.py
+    - name: Syntax check
+      run: python -m py_compile app/main.py app/models.py app/celery_worker.py
+
+    - name: Upload Projeto Pronto
+      uses: actions/upload-artifact@v4
+      with:
+        name: dino-package-ready
+        path: |
+          .
+          !venv/
+          !__pycache__/

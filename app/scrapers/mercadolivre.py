@@ -37,9 +37,10 @@ def raspar_primeiro_produto(url: str, tarefa_id: int, orcamento: float = 0.0) ->
                 titulo = titulo_unico.first.text_content()
                 preco_el = page.locator('.ui-pdp-price__second-line .andes-money-amount__fraction').first
                 preco = preco_el.text_content().replace('.', '') if preco_el.count() > 0 else "0"
-                return {"titulo": titulo.strip(), "preco": preco, "status": "sucesso"}
+                # Na página única, o link é a própria URL original
+                return {"titulo": titulo.strip(), "preco": preco, "link": url, "status": "sucesso"}
 
-            #É UMA PÁGINA DE BUSCA (VÁRIOS PRODUTOS)
+            # É UMA PÁGINA DE BUSCA (VÁRIOS PRODUTOS)
             print(f"[{tarefa_id}] Lendo a lista de produtos...")
             # Ampliamos os seletores para pegar qualquer variação do ML
             produtos_na_busca = page.locator('.ui-search-layout__item, .poly-card').all()
@@ -57,6 +58,10 @@ def raspar_primeiro_produto(url: str, tarefa_id: int, orcamento: float = 0.0) ->
                     titulo_el = produto.locator('h2, .ui-search-item__title, .poly-component__title').first
                     preco_el = produto.locator('.andes-money-amount__fraction').first
                     
+                    # EXTRAINDO O LINK DO CARD
+                    link_el = produto.locator('a').first
+                    link_texto = link_el.get_attribute('href') if link_el.count() > 0 else ""
+                    
                     if titulo_el.count() > 0 and preco_el.count() > 0:
                         titulo_texto = titulo_el.text_content()
                         preco_texto = preco_el.text_content()
@@ -73,11 +78,11 @@ def raspar_primeiro_produto(url: str, tarefa_id: int, orcamento: float = 0.0) ->
                                 if preco_num <= orcamento:
                                     print(f"[{tarefa_id}] ACHOU! {titulo_texto} por R$ {preco_num}")
                                     browser.close()
-                                    return {"titulo": titulo_texto, "preco": preco_texto_limpo, "status": "sucesso"}
+                                    return {"titulo": titulo_texto, "preco": preco_texto_limpo, "link": link_texto, "status": "sucesso"}
                             else:
                                 print(f"[{tarefa_id}] Peguei o primeiro: {titulo_texto}")
                                 browser.close()
-                                return {"titulo": titulo_texto, "preco": preco_texto_limpo, "status": "sucesso"}
+                                return {"titulo": titulo_texto, "preco": preco_texto_limpo, "link": link_texto, "status": "sucesso"}
                 except Exception as e:
                     continue 
                     
@@ -85,6 +90,7 @@ def raspar_primeiro_produto(url: str, tarefa_id: int, orcamento: float = 0.0) ->
             return {
                 "titulo": "Nenhum produto atende ao orçamento",
                 "preco": "0",
+                "link": "",
                 "status": "sucesso" 
             }
 
@@ -94,5 +100,6 @@ def raspar_primeiro_produto(url: str, tarefa_id: int, orcamento: float = 0.0) ->
             return {
                 "titulo": "Erro na captura",
                 "preco": "0",
+                "link": "",
                 "status": f"erro: {str(e)}"
             }

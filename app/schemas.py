@@ -41,6 +41,7 @@ class TarefaResponse(BaseModel):
     preco_custo: float
     orc_maximo: Optional[float] = None
     status_viabilidade: Optional[str] = None
+    link_produto: Optional[str] = None
     criado_em: datetime    
 
     # Permite ler os dados do SQLAlchemy

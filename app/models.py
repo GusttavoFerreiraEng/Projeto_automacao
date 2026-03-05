@@ -17,3 +17,4 @@ class TarefaAutomacao(Base):
     
     # Campo extra para margem ou observações (opcional)
     analise_detalhada = Column(String, nullable=True)
+    link_produto = Column(String, nullable=True)

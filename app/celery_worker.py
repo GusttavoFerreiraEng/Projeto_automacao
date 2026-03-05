@@ -72,6 +72,9 @@ def tarefa_raspar_site(self, tarefa_id: int):
         tarefa.status_viabilidade = viabilidade
         tarefa.analise_detalhada = f"Margem: {margem:.2f}% | Produto: {dados_da_web.get('titulo')}"
         
+        # GUARDAR O LINK NA BASE DE DADOS
+        tarefa.link_produto = dados_da_web.get("link", "")
+        
         status_text = (dados_da_web.get("status") or "").lower()
         if "erro" in status_text:
             tarefa.status = "erro na raspagem"

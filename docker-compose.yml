@@ -57,7 +57,7 @@ services:
 
   # O Agendador do Celery (Beat) para tarefas diárias
   beat:
-    build: .
+    build: ./backend
     container_name: dino_beat
     command: celery -A app.celery_worker.celery_app beat --loglevel=info
     environment:

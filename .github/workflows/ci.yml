@@ -23,7 +23,7 @@ jobs:
         pip install -r requirements.txt
 
     - name: Syntax check
-      run: python -m py_compile app/main.py app/models.py app/celery_worker.py
+      run: python -m py_compile backend/app/main.py backend/app/models.py backend/app/celery_worker.py
 
     - name: Upload Projeto Pronto
       uses: actions/upload-artifact@v4

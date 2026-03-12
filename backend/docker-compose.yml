@@ -1,25 +1,70 @@
 version: '3.8'
 
 services:
+  # O seu banco de dados (mantido com sua configuração de porta)
   postgres:
     image: postgres:15
     container_name: automacao_postgres
     restart: always
     environment:
-      - POSTGRES_USER=postgres
+      - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=automacao_db
+      - POSTGRES_DB=${POSTGRES_DB}
     ports:
-      - "5433:5432"
+      - "127.0.0.1:5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  # O seu Redis (fila de tarefas)
   redis:
     image: redis:alpine
     container_name: automacao_redis
     restart: always
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
+
+  # A sua API FastAPI
+  api:
+    build: .
+    container_name: dino_api
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    volumes:
+      - .:/app
+    ports: 
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - REDIS_URL=redis://redis:6379/0
+      - API_KEY_DINO=${API_KEY_DINO}
+    depends_on:
+      - postgres
+      - redis
+
+  # O Worker do Celery que executa os scrapers
+  worker:
+    build: .
+    container_name: dino_worker
+    command: celery -A app.celery_worker.celery_app worker --loglevel=info
+    volumes:
+      - .:/app
+      - ./shopee_session:/app/shopee_session
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+      - postgres
+
+  # O Agendador do Celery (Beat) para tarefas diárias
+  beat:
+    build: .
+    container_name: dino_beat
+    command: celery -A app.celery_worker.celery_app beat --loglevel=info
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - redis
 
 volumes:
   postgres_data:

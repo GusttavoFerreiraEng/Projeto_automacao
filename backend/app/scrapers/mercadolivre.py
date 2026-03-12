@@ -2,57 +2,96 @@ import sys
 import asyncio
 from playwright.sync_api import sync_playwright
 
-def raspar_primeiro_produto(url: str, tarefa_id: int) -> dict:
+def raspar_primeiro_produto(url: str, tarefa_id: int, orcamento: float = 0.0) -> dict:
     if sys.platform == 'win32':
         asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=False) 
+        # Adicionamos argumentos para disfarçar que é um robô
+        browser = p.chromium.launch(
+            headless=True,
+            args=['--disable-blink-features=AutomationControlled']
+        ) 
         context = browser.new_context(
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
-            # viewport={'width': 1920, 'height': 1080}
-            no_viewport=True
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            viewport={'width': 1280, 'height': 800},
+            java_script_enabled=True,
+            bypass_csp=True # Ignora algumas políticas de segurança
         )
         page = context.new_page()
-        context.clear_cookies()
         
         try:
-            print(f"[{tarefa_id}] Acessando URL com disfarce...")
-            # Aumentamos o timeout e esperamos a rede acalmar
-            page.goto(url, timeout=60000, wait_until="networkidle")
+            print(f"[{tarefa_id}] Buscando ofertas em: {url} | Orçamento Máximo: R$ {orcamento}")
+            # Voltamos para timeout fixo para evitar que a rede fique travada por trackers
+            page.goto(url, timeout=60000)
+            page.wait_for_timeout(4000) # Tempo pro ML decidir se carrega a página ou o Captcha
             
-            # 1. Aguarda o título (âncora da página)
-            page.wait_for_selector('.poly-component__title', timeout=15000)
-            nome_produto = page.locator('.poly-component__title').first.inner_text()
-            
-            #extração de preço
-            preco_produto = "0"
-            
-            # Lista de seletores de preço comuns no Mercado Livre (Lista e Anúncio)
-            seletores_preco = [
-                '.andes-money-amount__fraction',
-                '.poly-price__current .andes-money-amount__fraction',
-                '.ui-pdp-price__part .andes-money-amount__fraction',
-                '[itemprop="price"]'
-            ]
-            
-            for seletor in seletores_preco:
-                try:
-                    elemento = page.locator(seletor).first
-                    if elemento.is_visible(timeout=2000):
-                        texto = elemento.inner_text()
-                        if texto and texto.strip():
-                            preco_produto = texto.strip()
-                            print(f"[{tarefa_id}] Preço capturado com: {seletor}")
-                            break
-                except:
-                    continue
+            print(f"[{tarefa_id}] Rolando a página para carregar os produtos...")
+            for i in range(3):
+                page.mouse.wheel(0, 1000)
+                page.wait_for_timeout(1000)
 
+            # É A PÁGINA DE UM PRODUTO ÚNICO
+            titulo_unico = page.locator('h1.ui-pdp-title')
+            if titulo_unico.count() > 0:
+                titulo = titulo_unico.first.text_content()
+                preco_el = page.locator('.ui-pdp-price__second-line .andes-money-amount__fraction').first
+                preco = preco_el.text_content().replace('.', '') if preco_el.count() > 0 else "0"
+                # Na página única, o link é a própria URL original
+                return {"titulo": titulo.strip(), "preco": preco, "link": url, "status": "sucesso"}
+
+            # É UMA PÁGINA DE BUSCA (VÁRIOS PRODUTOS)
+            print(f"[{tarefa_id}] Lendo a lista de produtos...")
+            # Ampliamos os seletores para pegar qualquer variação do ML
+            produtos_na_busca = page.locator('.ui-search-layout__item, .poly-card').all()
+            
+            print(f"[{tarefa_id}] Encontrei {len(produtos_na_busca)} cards na tela.")
+
+            # SE NÃO ACHAR NADA, TIRA UM PRINT DA TELA!
+            if len(produtos_na_busca) == 0:
+                nome_arquivo = f"erro_tela_tarefa_{tarefa_id}.png"
+                print(f"[{tarefa_id}] Tirando foto da tela para investigar. Arquivo: {nome_arquivo}")
+                page.screenshot(path=nome_arquivo, full_page=True)
+
+            for produto in produtos_na_busca:
+                try:
+                    titulo_el = produto.locator('h2, .ui-search-item__title, .poly-component__title').first
+                    preco_el = produto.locator('.andes-money-amount__fraction').first
+                    
+                    # EXTRAINDO O LINK DO CARD
+                    link_el = produto.locator('a').first
+                    link_texto = link_el.get_attribute('href') if link_el.count() > 0 else ""
+                    
+                    if titulo_el.count() > 0 and preco_el.count() > 0:
+                        titulo_texto = titulo_el.text_content()
+                        preco_texto = preco_el.text_content()
+                        
+                        if titulo_texto and preco_texto:
+                            titulo_texto = titulo_texto.strip()
+                            preco_texto_limpo = preco_texto.replace('.', '').strip()
+                            preco_num = float(preco_texto_limpo)
+                            
+                            if preco_num < 100:
+                                continue
+
+                            if orcamento > 0:
+                                if preco_num <= orcamento:
+                                    print(f"[{tarefa_id}] ACHOU! {titulo_texto} por R$ {preco_num}")
+                                    browser.close()
+                                    return {"titulo": titulo_texto, "preco": preco_texto_limpo, "link": link_texto, "status": "sucesso"}
+                            else:
+                                print(f"[{tarefa_id}] Peguei o primeiro: {titulo_texto}")
+                                browser.close()
+                                return {"titulo": titulo_texto, "preco": preco_texto_limpo, "link": link_texto, "status": "sucesso"}
+                except Exception as e:
+                    continue 
+                    
             browser.close()
             return {
-                "titulo": nome_produto,
-                "preco": f"R$ {preco_produto}",
-                "status": "sucesso"
+                "titulo": "Nenhum produto atende ao orçamento",
+                "preco": "0",
+                "link": "",
+                "status": "sucesso" 
             }
 
         except Exception as e:
@@ -61,5 +100,6 @@ def raspar_primeiro_produto(url: str, tarefa_id: int) -> dict:
             return {
                 "titulo": "Erro na captura",
                 "preco": "0",
+                "link": "",
                 "status": f"erro: {str(e)}"
             }

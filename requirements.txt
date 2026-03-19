@@ -12,3 +12,4 @@ flower
 httpx
 logging
 slowapi
+google-genai

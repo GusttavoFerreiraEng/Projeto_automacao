@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException, Security, Request
 from fastapi.responses import JSONResponse
+from fastapi import FastAPI, Request
 from fastapi import HTTPException, Depends, status
 from sqlalchemy.exc import SQLAlchemyError
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -111,13 +112,13 @@ def home():
 # ROTA PARA CRIAR TAREFAS 
 @app.post("/tarefas/", response_model=schemas.TarefaResponse, dependencies=[Depends(verificar_api_key)])
 @limiter.limit("5/minute")
-def criar_tarefa(Request: Request, tarefa: schemas.TarefaCreate, db: Session = Depends(get_db)):
+def criar_tarefa(request: Request, tarefa: schemas.TarefaCreate, db: Session = Depends(get_db)):
+
     logger.info(f"Nova Tarefa recebida site: {tarefa.site}")
-    
+
     nova_tarefa = models.TarefaAutomacao(
         site=tarefa.site,
         preco_custo=tarefa.preco_custo, 
-        
         orcamento_maximo=tarefa.orc_maximo 
     )
     

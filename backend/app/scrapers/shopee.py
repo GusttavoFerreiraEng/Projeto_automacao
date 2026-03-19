@@ -13,7 +13,7 @@ def raspar_shopee(url: str, tarefa_id: int, orcamento: float = 0.0) -> dict:
     with sync_playwright() as p:
         context = p.chromium.launch_persistent_context(
             user_data_dir,
-            headless=True, # Mude para False se quiser ver o Dino trabalhando e logar manualmente uma vez
+            headless=True,
             args=[
                 '--disable-blink-features=AutomationControlled',
                 '--no-sandbox',

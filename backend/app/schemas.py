@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import List, Optional
 from pydantic import BaseModel, ConfigDict, field_validator
 
-# Esquema para CRIAR uma tarefa (o que o usuário envia na API)
+# Esquema para CRIAR uma tarefa
 class TarefaCreate(BaseModel):
     site: str
     preco_custo: Optional[float] = 0.0
@@ -51,9 +51,10 @@ class TarefaResponse(BaseModel):
     orc_maximo: Optional[float] = None
     status_viabilidade: Optional[str] = None
     link_produto: Optional[str] = None
+    analise_detalhada: Optional[str]
     criado_em: datetime    
 
-    # Permite ler os dados do SQLAlchemy (Pydantic v2)
+    # Permite ler os dados do SQLAlchemy
     model_config = ConfigDict(from_attributes=True)
 
     # Lista de historicos vinculada à tarefa

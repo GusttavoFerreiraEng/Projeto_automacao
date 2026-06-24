@@ -1,35 +1,35 @@
-name: Dino CI
+name: CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
-  build:
+  lint-e-testes:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: "3.11"
+      - name: Configura Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
+      - name: Instala dependências
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install ruff pytest
 
-    - name: Syntax check
-      run: python -m py_compile backend/app/main.py backend/app/models.py backend/app/celery_worker.py
+      - name: Lint (ruff)
+        run: ruff check backend/
 
-    - name: Upload Projeto Pronto
-      uses: actions/upload-artifact@v4
-      with:
-        name: dino-package-ready
-        path: |
-          .
-          !venv/
-          !__pycache__/
+      - name: Verifica sintaxe dos módulos principais
+        run: |
+          python -m py_compile backend/app/main.py
+          python -m py_compile backend/app/models.py
+          python -m py_compile backend/app/schemas.py
+          python -m py_compile backend/app/celery_worker.py
+          python -m py_compile backend/app/scrapers/mercadolivre.py

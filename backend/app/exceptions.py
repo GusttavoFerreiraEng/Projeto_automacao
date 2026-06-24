@@ -1,19 +1,23 @@
 class DinoError(Exception):
-    """Base para erros do Dino"""
+    """Base para erros do projeto."""
     pass
+
 
 class ScraperBlockedError(DinoError):
-    """Quando o site detecta o robô (Captcha, Login, 403)"""
+    """Site detectou o robô (captcha, login, 403)."""
     pass
+
 
 class ScraperLayoutError(DinoError):
-    """O site abriu, mas não achamos o preço/título (mudaram o HTML)"""
+    """Site carregou, mas o seletor de preço/título mudou."""
     pass
+
 
 class ScraperTimeoutError(DinoError):
-    """O site não carregou a tempo"""
+    """Site não carregou no tempo limite."""
     pass
 
+
 class ScraperURLError(DinoError):
-    """Lançada quando a URL é genérica demais (ex: apenas a home)"""
+    """URL genérica demais (ex: apenas a home do site)."""
     pass

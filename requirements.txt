@@ -1,6 +1,6 @@
 fastapi
-uvicorn
-celery
+uvicorn[standard]
+celery[redis]
 redis
 playwright
 sqlalchemy
@@ -8,8 +8,5 @@ psycopg2-binary
 pydantic
 python-dotenv
 alembic
-flower
-httpx
-logging
 slowapi
-google-genai
+httpx

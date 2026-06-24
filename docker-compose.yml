@@ -4,10 +4,9 @@ services:
     container_name: automacao_postgres
     restart: always
     environment:
-      - POSTGRES_USER=${POSTGRES_USER:-dino_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-dino_pass}
-      - POSTGRES_DB=${POSTGRES_DB:-dino_db}
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      POSTGRES_USER: ${POSTGRES_USER:-dino_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dino_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-dino_db}
     ports:
       - "127.0.0.1:5433:5432"
     volumes:
@@ -23,17 +22,16 @@ services:
   api:
     build: .
     container_name: dino_api
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     volumes:
       - ./backend:/app
-    ports: 
+    ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-dino_user}:${POSTGRES_PASSWORD:-dino_pass}@postgres:5432/${POSTGRES_DB:-dino_db}
-      - REDIS_URL=redis://redis:6379/0
-      - API_KEY_DINO=${API_KEY_DINO:-dinopanquecas}
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
-      - PYTHONPATH=/app
+      DATABASE_URL: postgresql://${POSTGRES_USER:-dino_user}:${POSTGRES_PASSWORD:-dino_pass}@postgres:5432/${POSTGRES_DB:-dino_db}
+      REDIS_URL: redis://redis:6379/0
+      API_KEY_DINO: ${API_KEY_DINO:-dinopanquecas}
+      PYTHONPATH: /app
     depends_on:
       - postgres
       - redis
@@ -41,15 +39,13 @@ services:
   worker:
     build: .
     container_name: dino_worker
-    command: celery -A app.celery_worker.celery_app worker --loglevel=info
+    command: celery -A app.celery_worker.celery_app worker --loglevel=info --concurrency=2
     volumes:
       - ./backend:/app
-      - ./backend/shopee_session:/app/shopee_session
     environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-dino_user}:${POSTGRES_PASSWORD:-dino_pass}@postgres:5432/${POSTGRES_DB:-dino_db}
-      - REDIS_URL=redis://redis:6379/0
-      - PYTHONPATH=/app
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-dino_user}:${POSTGRES_PASSWORD:-dino_pass}@postgres:5432/${POSTGRES_DB:-dino_db}
+      REDIS_URL: redis://redis:6379/0
+      PYTHONPATH: /app
     depends_on:
       - redis
       - postgres
@@ -61,10 +57,9 @@ services:
     volumes:
       - ./backend:/app
     environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-dino_user}:${POSTGRES_PASSWORD:-dino_pass}@postgres:5432/${POSTGRES_DB:-dino_db}
-      - REDIS_URL=redis://redis:6379/0
-      - PYTHONPATH=/app
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-dino_user}:${POSTGRES_PASSWORD:-dino_pass}@postgres:5432/${POSTGRES_DB:-dino_db}
+      REDIS_URL: redis://redis:6379/0
+      PYTHONPATH: /app
     depends_on:
       - redis
 

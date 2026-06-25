@@ -14,8 +14,8 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from dotenv import load_dotenv
 
-from . import models, schemas
-from .database import engine, get_db
+from .database import models, schemas
+from .database.connection import engine, get_db
 from .celery_worker import tarefa_raspar_site
 
 load_dotenv()
@@ -67,8 +67,8 @@ async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
     )
 
 
-@app.get("/health", tags=["Infra"])
-def health_check():
+@app.get("/Serviços", tags=["Infra"])
+def check_services():
     resultado = {"status": "healthy", "servicos": {}}
 
     try:

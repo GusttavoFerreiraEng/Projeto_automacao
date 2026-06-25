@@ -3,8 +3,8 @@ import logging
 from celery import Celery
 from celery.schedules import crontab
 from dotenv import load_dotenv
-from .database import SessionLocal
-from . import models
+from .database.connection import SessionLocal
+from .database import models
 from .scrapers.mercadolivre import raspar_mercadolivre
 from .exceptions import ScraperBlockedError, ScraperLayoutError, ScraperTimeoutError, ScraperURLError
 from urllib.parse import urlparse

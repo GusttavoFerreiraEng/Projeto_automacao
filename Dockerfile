@@ -1,9 +1,10 @@
 FROM python:3.11-slim
 
-WORKDIR /backend
+WORKDIR /app
 
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/app
 
 RUN apt-get update && apt-get install -y \
     libpq-dev \
@@ -20,6 +21,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 RUN playwright install chromium --with-deps
 
-COPY . .
+COPY backend/ .
 
 EXPOSE 8000

@@ -5,10 +5,6 @@ from ..exceptions import ScraperBlockedError, ScraperLayoutError, ScraperTimeout
 
 
 def raspar_mercadolivre(url: str, tarefa_id: int, orcamento: float = 0.0) -> dict:
-    """
-    Raspa o Mercado Livre a partir de uma URL de produto ou de busca.
-    Retorna dict com: titulo, preco (float), link, status.
-    """
     if sys.platform == "win32":
         asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
